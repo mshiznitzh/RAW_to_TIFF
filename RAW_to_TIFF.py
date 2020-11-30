@@ -4,6 +4,8 @@ import subprocess
 import os.path
 import logging
 import glob
+import multiprocessing as mp
+
 
 def check_for_path(path):
     if ~os.path.isdir(path):
@@ -46,19 +48,22 @@ def convert_raw_to_tiff(outputpath, filename):
         rgb = raw.postprocess()
 
     imageio.imsave(outputpath + filename.replace('.CR3', '.tiff'), rgb)
-    process = subprocess.run(['exiftool', '-TagsFromFile', outputpath, filename.replace('.CR3', '.tiff')],
+    process = subprocess.run(['exiftool', '-TagsFromFile',filename, '../tiff/'+filename.replace('.CR3', '.tiff'), '-overwrite_original'],
                              stdout=subprocess.PIPE,
                              universal_newlines=True)
 def main():
     path = './RAW'
-    filenames = filesearch('.CR3')
+
     outputpath = '../tiff/'
 
     check_for_path (outputpath)
     Change_Working_Path(path)
+    filenames = filesearch('.CR3')
+    pool = mp.Pool(processes=10)
+        #for filename in filenames:
+        #convert_raw_to_tiff(outputpath, filename)
+    result = [pool.apply(convert_raw_to_tiff, args=(outputpath, filename)) for filename in filenames]
 
-    for filename in filenames:
-        convert_raw_to_tiff(outputpath, filename)
 
 if __name__ == "__main__":
     """ This is executed when run from the command line """
@@ -67,5 +72,6 @@ if __name__ == "__main__":
     FORMAT = "[%(filename)s:%(lineno)s - %(funcName)20s() ] %(message)s"
     logging.basicConfig(format=FORMAT)
     logger.setLevel(logging.INFO)
+
 
     main()
